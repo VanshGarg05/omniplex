@@ -16,11 +16,12 @@ import { useDisclosure } from "@nextui-org/modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@nextui-org/popover";
 import { createChatThread } from "../../store/chatSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { selectUserDetailsState, selectAuthState } from "@/store/authSlice";
+import { selectUserDetailsState, selectAuthState, selectIsProUser, selectSubscriptionState, setSubscriptionState } from "@/store/authSlice";
 import { db } from "../../../firebaseConfig";
 import { storage } from "../../../firebaseConfig";
-import { collection, doc, setDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, setDoc, writeBatch, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import ProBanner from "../ProBanner/ProBanner";
 
 import Arrow from "../../../public/svgs/Arrow.svg";
 import Filter from "../../../public/svgs/Filter.svg";
@@ -36,7 +37,95 @@ const MainPrompt = () => {
 
   const authState = useSelector(selectAuthState);
   const userDetails = useSelector(selectUserDetailsState);
+  const isProUser = useSelector(selectIsProUser);
+  const subscriptionData = useSelector(selectSubscriptionState);
   const userId = userDetails.uid;
+
+  // Debug logging
+  useEffect(() => {
+    console.log('MainPrompt Debug - Auth State:', authState);
+    console.log('MainPrompt Debug - Is Pro User:', isProUser);
+    console.log('MainPrompt Debug - Subscription Data:', subscriptionData);
+    console.log('MainPrompt Debug - Should show banner:', !isProUser && authState);
+  }, [authState, isProUser, subscriptionData]);
+
+  // Check localStorage for Pro status on component mount
+  useEffect(() => {
+    const checkLocalProStatus = () => {
+      try {
+        const localProStatus = localStorage.getItem('omniplex_pro_status');
+        const localProUser = localStorage.getItem('omniplex_pro_user');
+        
+        if (localProStatus === 'active' && localProUser === userId && !isProUser) {
+          console.log('Found local Pro status, activating...');
+          const localSubscription = {
+            status: 'active',
+            plan: 'pro',
+            stripeSessionId: 'local_storage',
+            stripeCustomerId: 'local_verification',
+            startDate: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          dispatch(setSubscriptionState(localSubscription));
+          
+          toast.success('✨ Pro status restored from local storage!', {
+            duration: 3000,
+            style: {
+              background: '#10B981',
+              color: 'white',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error checking local Pro status:', error);
+      }
+    };
+
+    if (userId && !isProUser) {
+      checkLocalProStatus();
+    }
+  }, [userId, isProUser, dispatch]);
+
+  // Manual activation for testing
+  const handleManualActivation = async () => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch('/api/verify-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          sessionId: 'manual_activation_' + Date.now(),
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        dispatch(setSubscriptionState(data.subscription));
+        
+        // Save to localStorage as backup
+        localStorage.setItem('omniplex_pro_status', 'active');
+        localStorage.setItem('omniplex_pro_user', userId);
+        localStorage.setItem('omniplex_pro_activated', new Date().toISOString());
+        
+        toast.success(data.message || 'Pro activated successfully!', {
+          duration: 3000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+          },
+        });
+      } else {
+        toast.error('Failed to activate Pro');
+      }
+    } catch (error) {
+      console.error('Manual activation error:', error);
+      toast.error('Error activating Pro');
+    }
+  };
 
   const [text, setText] = useState("");
   const [width, setWidth] = useState(0);
@@ -60,6 +149,8 @@ const MainPrompt = () => {
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Subscription data is now handled in AuthWrapper
 
   const handleFocusChange = (
     website: string,
@@ -234,7 +325,43 @@ const MainPrompt = () => {
 
   return (
     <div className={styles.container}>
+      {/* Pro Badge - Dark Theme at Top */}
+      {isProUser && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '10px', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          zIndex: 10 
+        }}>
+          <span style={{
+            background: '#1f2937',
+            color: '#10b981',
+            border: '1px solid #374151',
+            padding: '4px 12px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.5)'
+          }}>
+            <span>⭐</span>
+            PRO
+          </span>
+        </div>
+      )}
+      
       <div className={styles.title}>Where Knowledge Evolves</div>
+      
+      {/* Conditional Upgrade to Pro Banner - Only show for non-Pro users */}
+      {!isProUser && authState && (
+        <div style={{ maxWidth: '600px', margin: '20px auto' }}>
+          <ProBanner message="🚀 Unlock unlimited AI conversations and premium features with Pro!" />
+        </div>
+      )}
+      
       <div className={styles.promptContainer}>
         <textarea
           placeholder="Ask anything..."

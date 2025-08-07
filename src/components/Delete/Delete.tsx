@@ -9,7 +9,6 @@ import { resetChat } from "@/store/chatSlice";
 import { resetAISettings } from "@/store/aiSlice";
 import { resetAuth, selectUserDetailsState } from "@/store/authSlice";
 import {
-  getAuth,
   deleteUser,
   reauthenticateWithPopup,
   GoogleAuthProvider,
@@ -21,7 +20,7 @@ import {
   getDocs,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "../../../firebaseConfig";
+import { db, auth } from "../../../firebaseConfig";
 import toast from "react-hot-toast";
 
 type Props = {
@@ -39,7 +38,10 @@ const Delete = (props: Props) => {
 
   const deleteUserData = async (userId: string) => {
     try {
-      const auth = getAuth();
+      if (!auth) {
+        throw new Error("Firebase auth not initialized");
+      }
+      
       const user = auth.currentUser;
 
       if (user) {
@@ -78,7 +80,10 @@ const Delete = (props: Props) => {
     setLoading(true);
 
     try {
-      const auth = getAuth();
+      if (!auth) {
+        throw new Error("Firebase auth not initialized");
+      }
+      
       const user = auth.currentUser;
 
       if (user) {

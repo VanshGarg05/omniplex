@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { ScrollShadow } from "@nextui-org/scroll-shadow";
 import { useDisclosure } from "@nextui-org/modal";
 import Delete from "../Delete/Delete";
-import { getAuth, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { resetAISettings } from "@/store/aiSlice";
 import { resetChat } from "@/store/chatSlice";
 import { resetAuth, selectUserDetailsState } from "@/store/authSlice";
+import { auth } from "../../../firebaseConfig";
 
 import User from "../../../public/svgs/sidebar/User.svg";
 
@@ -24,10 +25,13 @@ const Plugins = (props: Props) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleLogout = async () => {
-    const auth = getAuth();
+    if (!auth) {
+      console.error("Firebase auth not initialized");
+      return;
+    }
+
     try {
       await signOut(auth);
-      await auth.signOut();
       props.close();
       dispatch(resetAISettings());
       dispatch(resetChat());

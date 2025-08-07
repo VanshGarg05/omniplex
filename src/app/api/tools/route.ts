@@ -1,6 +1,14 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI with fallback
+let openai: OpenAI | null = null;
+try {
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== '') {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+} catch (error) {
+  console.warn('Failed to initialize OpenAI client:', error);
+}
 
 export async function POST(req: Request) {
   if (req.method !== "POST") {
@@ -9,6 +17,15 @@ export async function POST(req: Request) {
         error: "Method not allowed, only POST requests are accepted.",
       }),
       { status: 405 }
+    );
+  }
+
+  // Check if OpenAI client is available
+  if (!openai || !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
+    console.warn('OpenAI API key not configured or client not initialized');
+    return new Response(
+      JSON.stringify({ mode: "chat", arg: "" }),
+      { status: 200 }
     );
   }
 
@@ -115,11 +132,29 @@ export async function POST(req: Request) {
       }),
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error calling OpenAI:", error);
+    
+    // Handle specific OpenAI errors
+    if (error?.status === 429) {
+      console.warn('OpenAI rate limit exceeded, falling back to chat mode');
+      return new Response(
+        JSON.stringify({ mode: "chat", arg: "" }),
+        { status: 200 }
+      );
+    }
+    
+    if (error?.code === 'insufficient_quota') {
+      console.warn('OpenAI quota exceeded, falling back to chat mode');
+      return new Response(
+        JSON.stringify({ mode: "chat", arg: "" }),
+        { status: 200 }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: "Failed to process the input" }),
-      { status: 500 }
+      JSON.stringify({ mode: "chat", arg: "" }),
+      { status: 200 }
     );
   }
 }

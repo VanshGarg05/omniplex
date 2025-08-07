@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     let date = "";
     let readingTime = 0;
 
-    if (id.length == 10) {
+    if (id.length == 10 && db) {
       const indexDocRef = doc(db, "index", id);
       const indexDocSnapshot = await getDoc(indexDocRef);
 
@@ -45,7 +45,12 @@ export async function GET(request: Request) {
 
     if (!chatThread) {
       return new ImageResponse(
-        <img width="1200" height="630" src="https://omniplex.ai/OGImage.png" />,
+        <div style={{
+          width: '1200px',
+          height: '630px',
+          background: 'url(https://omniplex.ai/OGImage.png)',
+          backgroundSize: 'cover'
+        }} />,
         {
           width: 1200,
           height: 630,

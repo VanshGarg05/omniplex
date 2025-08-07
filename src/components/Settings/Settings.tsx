@@ -8,6 +8,7 @@ import { ScrollShadow } from "@nextui-org/scroll-shadow";
 import { Tooltip } from "@nextui-org/tooltip";
 import { Select, SelectItem } from "@nextui-org/select";
 import { Slider } from "@nextui-org/slider";
+import { useRouter } from "next/navigation";
 import {
   setModel,
   setTemperature,
@@ -33,6 +34,7 @@ import Selector from "../../../public/svgs/Selector.svg";
 
 const Settings = () => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isAuthenticated = useSelector(selectAuthState);
 
@@ -266,6 +268,32 @@ const Settings = () => {
               className={styles.textarea}
               placeholder="Write your prompt here..."
             />
+          </div>
+          
+          {/* Billing Section */}
+          <div className={styles.listHeader} style={{ marginTop: '24px' }}>Billing & Plans</div>
+          <div
+            className={styles.listItem}
+            onClick={() => router.push('/pricing')}
+            style={{ 
+              backgroundColor: '#1e40af', 
+              color: 'white',
+              marginBottom: '8px',
+              fontWeight: '500'
+            }}
+          >
+            💳 View Pricing & Upgrade to Pro
+          </div>
+          <div
+            className={styles.listItem}
+            onClick={() => router.push('/settings')}
+            style={{ 
+              backgroundColor: '#374151', 
+              color: '#e5e7eb',
+              marginBottom: '8px'
+            }}
+          >
+            ⚙️ Manage Subscription & Billing
           </div>
         </div>
       </ScrollShadow>

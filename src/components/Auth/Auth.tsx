@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Modal, ModalContent } from "@nextui-org/modal";
 import { useDispatch } from "react-redux";
 import { setAuthState, setUserDetailsState } from "@/store/authSlice";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../../firebaseConfig";
+import { db, auth } from "../../../firebaseConfig";
 import Spinner from "../Spinner/Spinner";
 
 type Props = {
@@ -21,9 +21,13 @@ const Auth = (props: Props) => {
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async () => {
+    if (!auth) {
+      console.error("Firebase auth not initialized");
+      return;
+    }
+
     setLoading(true);
     try {
-      const auth = getAuth();
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
