@@ -48,7 +48,11 @@ const Delete = (props: Props) => {
         await deleteUser(user);
       }
 
-      const userRef = doc(db, "users", userId);
+      if(db){
+
+        const userRef = doc(db, "users", userId);
+      
+
       const historyCollectionRef = collection(userRef, "history");
       const libraryCollectionRef = collection(userRef, "library");
 
@@ -69,6 +73,7 @@ const Delete = (props: Props) => {
       await deleteDoc(userRef);
 
       console.log("User data deleted successfully");
+    }
     } catch (error) {
       console.error("Error deleting user data:", error);
       throw error;

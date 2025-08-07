@@ -31,9 +31,11 @@ const Auth = (props: Props) => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
+      if(db) {
+        
+        const userRef = doc(db , "users", user.uid);
+        const userDoc = await getDoc(userRef);
+      
 
       if (userDoc.exists()) {
         await setDoc(
@@ -57,6 +59,7 @@ const Auth = (props: Props) => {
           },
         });
       }
+    }
 
       dispatch(setAuthState(true));
       dispatch(
